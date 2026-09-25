@@ -32,6 +32,8 @@ cat << EOF
     -n, --name NAME         Specify theme name (Default: $THEME_NAME)
     -s, --scheme VARIANTS   Specify folder colorscheme variant(s) [default|nord|dracula|gruvbox|everforest|catppuccin|all]
     -t, --theme VARIANTS    Specify folder color theme variant(s) [default|purple|pink|red|orange|yellow|green|teal|grey|all] (Default: blue)
+    -a, --alternative       Install alternative icons for software center and file-manager
+    -p, --kde-plasma        Replaces Apple logo with KDE Plasma logo.
     -b, --bold              Install bolder panel icons version (1.5px size)
     -notint, --notint       Disable Follow ColorSheme for folders on KDE Plasma
     -r, --remove, -u, --uninstall   Remove/Uninstall $THEME_NAME icon themes
@@ -69,6 +71,18 @@ install() {
       cp -r "${SRC_DIR}"/bold/*                                                             "${THEME_DIR}"
     fi
 
+    if [[ ${alternative:-} == 'true' ]]; then
+      for alt_dir in "${SRC_DIR}"/alternative/*; do
+        if [[ "$(basename "$alt_dir")" != "places" ]]; then
+          cp -r "$alt_dir" "${THEME_DIR}" 2>/dev/null || true
+        fi
+      done
+    fi
+
+    if [[ ${plasma:-} == 'true' ]]; then
+      cp -r "${SRC_DIR}"/plasma/*                                                           "${THEME_DIR}" 2>/dev/null || true
+    fi
+
     cp -r "${SRC_DIR}"/links/*                                                              "${THEME_DIR}"
   fi
 
@@ -92,6 +106,14 @@ install() {
       cp -r "${SRC_DIR}"/bold/status/*                                                      "${THEME_DIR}"/status
     fi
 
+    if [[ ${alternative:-} == 'true' ]]; then
+      cp -r "${SRC_DIR}"/alternative/apps/symbolic/*.svg                                    "${THEME_DIR}"/apps/symbolic 2>/dev/null || true
+    fi
+
+    if [[ ${plasma:-} == 'true' ]]; then
+      cp -r "${SRC_DIR}"/plasma/*                                                           "${THEME_DIR}" 2>/dev/null || true
+    fi
+
     # Change icon color for dark theme
     sed -i "s/#363636/#dedede/g" "${THEME_DIR}"/{actions,devices,places,status}/{16,22,24}/*.svg
     sed -i "s/#363636/#dedede/g" "${THEME_DIR}"/{actions,devices,status}/32/*.svg
@@ -107,6 +129,7 @@ install() {
     cp -r "${SRC_DIR}"/links/status/{16,22,24,32,symbolic}                                  "${THEME_DIR}"/status
     cp -r "${SRC_DIR}"/links/apps/{22,symbolic}                                             "${THEME_DIR}"/apps
     cp -r "${SRC_DIR}"/links/categories/{22,symbolic}                                       "${THEME_DIR}"/categories
+    cp -r "${SRC_DIR}"/links/emblems/symbolic                                               "${THEME_DIR}"/emblems
     cp -r "${SRC_DIR}"/links/mimetypes/symbolic                                             "${THEME_DIR}"/mimetypes
 
     cd "${dest}"
@@ -140,7 +163,38 @@ install() {
     ln -sf mimetypes mimetypes@2x
     ln -sf places places@2x
     ln -sf status status@2x
+    ln -sf actions actions@3x
+    ln -sf apps apps@3x
+    ln -sf categories categories@3x
+    ln -sf devices devices@3x
+    ln -sf emblems emblems@3x
+    ln -sf mimetypes mimetypes@3x
+    ln -sf places places@3x
+    ln -sf status status@3x
   )
+
+  # Only the folder icons (apps, places) change with the scheme and accent
+  # color. Every other directory is identical for all variants of the same
+  # light/dark color, so link them to the default theme instead of keeping a
+  # full copy per variant. Prefer the global default (covers -s all), fall back
+  # to the scheme default (covers a single scheme), and skip linking when no
+  # default is present so a standalone -t variant still installs in full.
+  if [[ "${color}" != '' ]]; then
+    local base=
+    if [[ ( "${theme}" != '' || "${scheme}" != '' ) && -d "${dest}/${name}${color}" ]]; then
+      base="${name}${color}"
+    elif [[ "${theme}" != '' && -d "${dest}/${name}${scheme}${color}" ]]; then
+      base="${name}${scheme}${color}"
+    fi
+    if [[ -n "${base}" ]]; then
+      for dir in actions categories devices emblems mimetypes status; do
+        if [[ -d "${THEME_DIR}/${dir}" && ! -L "${THEME_DIR}/${dir}" ]]; then
+          rm -rf "${THEME_DIR}/${dir}"
+          ln -sf "../${base}/${dir}" "${THEME_DIR}/${dir}"
+        fi
+      done
+    fi
+  fi
 
   gtk-update-icon-cache "${THEME_DIR}"
 }
@@ -369,6 +423,16 @@ while [[ "$#" -gt 0 ]]; do
     -b|--bold)
       bold='true'
       echo -e "\nInstalling 'bold' version..."
+      shift
+      ;;
+    -a|--alternative)
+      alternative='true'
+      echo -e "\nInstalling 'alternative' version..."
+      shift
+      ;;
+    -p|--kde-plasma)
+      plasma='true'
+      echo -e "\nReplacing Apple logo with KDE Plasma logo..."
       shift
       ;;
     -notint|--notint)
