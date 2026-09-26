@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <title>EasyEffects symbolic</title>
+  <g fill="#363636">
+    <rect x="2.9" y="1" width="1.2" height="14" rx=".6"/>
+    <rect x="7.4" y="1" width="1.2" height="14" rx=".6"/>
+    <rect x="11.9" y="1" width="1.2" height="14" rx=".6"/>
+    <circle cx="3.5" cy="9.4" r="1.75"/>
+    <circle cx="8" cy="5.1" r="1.75"/>
+    <circle cx="12.5" cy="11.8" r="1.75"/>
+  </g>
+</svg>
